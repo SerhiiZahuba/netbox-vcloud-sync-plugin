@@ -21,11 +21,6 @@ Testing on NetBox version: 4.4.1
  - cpu
  - mem
 
-## To do (problems)
-- Some problems with schedule, manual run works.
-- Add mac address to sync
-
-
 FAQ:
 
 <img width="1931" height="1484" alt="image" src="https://github.com/user-attachments/assets/6c53a6ff-9391-47fd-adcb-6748f38ce682" />
