@@ -1,0 +1,32 @@
+{% extends 'generic/object.html' %}
+{% load boolean_icon %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <h5 class="card-header">Cloud Sync Configuration</h5>
+            <div class="card-body">
+                <table class="table table-hover attr-table">
+                    <tr><th>Name</th><td>{{ object.name }}</td></tr>
+                    <tr><th>vCloud URL</th><td>{{ object.vcloud_url }}</td></tr>
+                    <tr><th>User</th><td>{{ object.vcloud_user }}</td></tr>
+                    <tr><th>Interval (min)</th><td>{{ object.sync_interval_minutes }}</td></tr>
+                    <tr><th>Sync Templates</th><td>{{ object.sync_templates|boolean_icon|safe }}</td></tr>
+                    <tr><th>Sync Powered Off</th><td>{{ object.sync_poweroff|boolean_icon|safe }}</td></tr>
+
+                    <tr><th>Site</th><td>{{ object.netbox_site }}</td></tr>
+                    <tr><th>Cluster</th><td>{{ object.netbox_cluster }}</td></tr>
+                    <tr><th>Role</th><td>{{ object.netbox_role }}</td></tr>
+                    <tr><th>Tenant</th><td>{{ object.netbox_tenant }}</td></tr>
+                    <tr><th>Platform</th><td>{{ object.netbox_platform }}</td></tr>
+
+                    <tr><th>Last Sync</th><td>{{ object.last_sync|date:"Y-m-d H:i:s" }}</td></tr>
+                    <tr><th>Next Sync</th><td>{{ object.next_sync|date:"Y-m-d H:i:s" }}</td></tr>
+                    <tr><th>Enabled</th><td>{{ object.enabled|boolean_icon|safe }}</td></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
