@@ -14,9 +14,16 @@ add 'netbox_cloudsync' to configuration.py
 Testing on NetBox version: 4.4.1
 
 
+## Tools sync
+ - vm`s name
+ - ip
+ - disk
+ - cpu
+ - mem
+
 ## To do (problems)
-Some problems with schedule, manual run works.
-Add mac address to sync
+- Some problems with schedule, manual run works.
+- Add mac address to sync
 
 
 FAQ:
