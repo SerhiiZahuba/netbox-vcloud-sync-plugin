@@ -9,6 +9,7 @@ cd /opt/netbox/
 git clone https://github.com/SerhiiZahuba/netbox-vcloud-sync-plugin.git
 pip install -e .
 python3 manage.py migrate netbox_cloudsync
+add 'netbox_cloudsync' to configuration.py 
 ```
 Testing on NetBox version: 4.4.1
 
