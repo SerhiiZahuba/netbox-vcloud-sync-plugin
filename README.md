@@ -14,8 +14,8 @@
 
 ## 🚀 Overview
 
-**NetBox CloudSync** — це плагін для автоматичної синхронізації віртуальних машин із **vCloud Director** у **NetBox**, використовуючи ORM.  
-Плагін створений для того, щоб швидко та безпечно оновлювати дані VM без ручного втручання.
+**NetBox CloudSync** — is a plugin for automatic synchronization of virtual machines from **vCloud Director** to **NetBox** using ORM.
+The plugin is designed to quickly and safely update VM data without manual intervention. 
 
 ---
 
@@ -26,3 +26,6 @@ cd /opt/netbox/
 git clone https://github.com/SerhiiZahuba/netbox-vcloud-sync-plugin.git
 pip install -e .
 python3 manage.py migrate netbox_cloudsync
+```
+
+## Settings
