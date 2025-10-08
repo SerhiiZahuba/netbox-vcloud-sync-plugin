@@ -23,7 +23,7 @@ Testing on NetBox version: 4.4.1
  - mac address
 
 FAQ:
-
+1) Create new settings for sync
 <img width="1931" height="1484" alt="image" src="https://github.com/user-attachments/assets/6c53a6ff-9391-47fd-adcb-6748f38ce682" />
 
 <img width="3371" height="1406" alt="image" src="https://github.com/user-attachments/assets/ecb317ea-251e-42c3-a31b-53bcc2bf4a89" />
