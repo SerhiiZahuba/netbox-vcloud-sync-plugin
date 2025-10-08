@@ -1,6 +1,6 @@
 # NetBox CloudSync Plugin
 
-Plugin for synchronizing vCloud VMs into NetBox using the ORM.
+Plugin for synchronizing vCloud Director VMs into NetBox using the ORM.
 
 ## Installation
 
@@ -20,6 +20,7 @@ Testing on NetBox version: 4.4.1
  - disk
  - cpu
  - mem
+ - mac address
 
 FAQ:
 
