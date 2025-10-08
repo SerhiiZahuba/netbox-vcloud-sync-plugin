@@ -14,7 +14,7 @@ from ipam.models import IPAddress, VLAN
 
 
 # ==============================================
-# 🧩 Основний джоб: синхронізація vCloud → NetBox
+# 🧩 Main job: sync vCloud → NetBox
 # ==============================================
 class CloudSyncJob(JobRunner):
     """Синхронізація vCloud → NetBox (через ORM)"""
@@ -55,7 +55,7 @@ class CloudSyncJob(JobRunner):
                 )
 
             except Exception as e:
-                self.logger.error(f"⚠️ Помилка '{cfg.name}': {e}")
+                self.logger.error(f"⚠️ Error '{cfg.name}': {e}")
                 continue
 
         self.logger.info("=== ✅ Cloud Sync Job completed ===")
@@ -76,12 +76,12 @@ class CloudSyncJob(JobRunner):
             timeout=15,
         )
         if token_resp.status_code != 200:
-            self.logger.warning(f"❌ Токен не отримано для {cfg.name}")
+            self.logger.warning(f"❌ Token не отримано для {cfg.name}")
             return
 
         vcloud_token = token_resp.headers.get("x-vmware-vcloud-access-token")
         if not vcloud_token:
-            self.logger.warning(f"❌ Порожній токен у відповіді від {cfg.name}")
+            self.logger.warning(f"❌ Порожній token у відповіді від {cfg.name}")
             return
 
         self.logger.info(f"✅ Отримано токен для {cfg.name}")
@@ -111,7 +111,7 @@ class CloudSyncJob(JobRunner):
                 break
 
             all_vms.extend(records)
-            self.logger.info(f"📄 Сторінка {page}: {len(records)} ВМ")
+            self.logger.info(f"📄 Page {page}: {len(records)} ВМ")
 
             if len(records) < page_size:
                 break
@@ -131,7 +131,7 @@ class CloudSyncJob(JobRunner):
                 continue
 
     # ======================================================
-    # 🧠 Обробка однієї ВМ + інтерфейси + IP
+    # 🧠 Обробка однієї VM + interfaces + IP
     # ======================================================
     def sync_vm(self, cfg, vm, token, href):
         try:
@@ -198,9 +198,9 @@ class CloudSyncJob(JobRunner):
                     "active" if status.upper() == "POWERED_ON" else "offline"
                 )
                 vm_obj.save()
-                self.logger.info(f"♻️ Оновлено VM: {name}")
+                self.logger.info(f"♻️ Update VM: {name}")
             else:
-                self.logger.info(f"🆕 Створено VM: {name}")
+                self.logger.info(f"🆕 Create VM: {name}")
 
             # --- Network interfaces + IPs ---
             net_data = []
@@ -211,6 +211,7 @@ class CloudSyncJob(JobRunner):
                         "network": conn.get("network"),
                         "ip": conn.get("ipAddress"),
                         "ext_ip": conn.get("externalIpAddress"),
+                        "mac": conn.get("macAddress"),
                     })
             else:
                 if vm.get("networkName") and vm.get("ipAddress"):
@@ -218,6 +219,7 @@ class CloudSyncJob(JobRunner):
                         "network": vm.get("networkName"),
                         "ip": vm.get("ipAddress"),
                         "ext_ip": None,
+                        "mac": None,
                     })
 
             if not net_data:
@@ -228,11 +230,38 @@ class CloudSyncJob(JobRunner):
                 net_name = net.get("network")
                 ip_addr = (net.get("ip") or "").strip()
                 ext_ip = (net.get("ext_ip") or "").strip()
+                mac = (net.get("mac") or "").strip()
 
-                iface, _ = VMInterface.objects.get_or_create(
+                iface_obj = VMInterface.objects.filter(
+                    virtual_machine=vm_obj,
+                    name=net_name or "eth0",
+                ).first()
+
+                iface_obj, _ = VMInterface.objects.get_or_create(
                     virtual_machine=vm_obj,
                     name=net_name or "eth0",
                 )
+
+
+                if mac:
+                    mac = mac.strip().lower()
+                    from dcim.models import MACAddress
+
+                    mac_obj, _ = MACAddress.objects.get_or_create(
+                        mac_address=mac,
+                        defaults={"description": f"Imported via CloudSync ({cfg.name})"},
+                    )
+
+                    # Set mac as primary
+                    if iface_obj.primary_mac_address != mac_obj:
+                        iface_obj.primary_mac_address = mac_obj
+                        iface_obj.save()
+                        self.logger.info(f"🔁 MAC update for {name}: {mac}")
+                    else:
+                        self.logger.debug(f"✅ MAC {mac} вже актуальна для {name}")
+                else:
+                    self.logger.debug(f"ℹ️ MAC відсутній для {name}")
+
 
                 vlan = None
                 if net_name:
@@ -265,7 +294,7 @@ class CloudSyncJob(JobRunner):
                                 "description": f"Imported via CloudSync ({cfg.name})",
                             },
                         )
-                        ip_obj.assigned_object = iface
+                        ip_obj.assigned_object = iface_obj
                         ip_obj.save()
                         if not vm_obj.primary_ip4:
                             vm_obj.primary_ip4 = ip_obj
@@ -276,7 +305,7 @@ class CloudSyncJob(JobRunner):
                         continue
 
         except Exception as e:
-            self.logger.error(f"⚠️ Помилка при sync_vm {vm.get('name')} (network): {e}")
+            self.logger.error(f"⚠️ Error при sync_vm {vm.get('name')} (network): {e}")
 
 
 # ==============================================================
