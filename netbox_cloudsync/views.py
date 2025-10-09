@@ -46,7 +46,7 @@ class RunSyncNowView(View):
 
     def get(self, request, pk):
         cfg = get_object_or_404(CloudSyncConfig, pk=pk)
-        job = CloudSyncJob.enqueue(data={"config_id": cfg.id})
+        job = CloudSyncJob.enqueue(config_id=cfg.id)
         messages.success(request, f"✅ Sync '{cfg.name}' запущено у фоні.")
         try:
             return redirect(reverse("core:job", args=[job.id]))
