@@ -46,17 +46,9 @@ class RunSyncNowView(View):
 
     def get(self, request, pk):
         cfg = get_object_or_404(CloudSyncConfig, pk=pk)
-
-        # 🟢 Запускаємо задачу (без instance, передаємо тільки ID)
         job = CloudSyncJob.enqueue(data={"config_id": cfg.id})
-
-        # 🟢 Повідомлення користувачу
-        messages.success(request, f"✅ Синхронізацію '{cfg.name}' запущено у фоні.")
-
-        # 🟢 Переходимо до сторінки job у NetBox
-        # NetBox 4.4 — jobs видно під /core/jobs/<UUID>/
+        messages.success(request, f"✅ Sync '{cfg.name}' запущено у фоні.")
         try:
             return redirect(reverse("core:job", args=[job.id]))
         except Exception:
-            # fallback якщо reverse не спрацює
             return redirect(f"/core/jobs/{job.id}/")

@@ -29,3 +29,14 @@ python3 manage.py migrate netbox_cloudsync
 ```
 
 ## Settings
+
+Add to configuration.py
+```
+PLUGINS = [
+'netbox_cloudsync',
+]
+```
+
+🔄 Features
+
+🧰 Future Plans
