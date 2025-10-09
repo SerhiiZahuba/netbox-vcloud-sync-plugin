@@ -35,12 +35,12 @@ class CloudSyncJob(JobRunner):
             else CloudSyncConfig.objects.filter(enabled=True)
         )
         if not configs.exists():
-            self.logger.warning("❗ Не знайдено активних конфігурацій.")
+            self.logger.warning("❗ No active configurations found..")
             return
 
         for cfg in configs:
             try:
-                self.logger.info(f"➡️ Синхронізація '{cfg.name}' ({cfg.vcloud_url}) ...")
+                self.logger.info(f"➡️ Sync '{cfg.name}' ({cfg.vcloud_url}) ...")
 
                 self.sync_config(cfg)
 
@@ -61,7 +61,7 @@ class CloudSyncJob(JobRunner):
         self.logger.info("=== ✅ Cloud Sync Job completed ===")
 
     # ======================================================
-    # 🔧 Синхронізація конфігу — токен, сторінки, виклик sync_vm
+    # 🔧 Sync config — token, page, run sync_vm
     # ======================================================
     def sync_config(self, cfg):
         creds = f"{cfg.vcloud_user}:{cfg.vcloud_password}"
@@ -76,17 +76,17 @@ class CloudSyncJob(JobRunner):
             timeout=15,
         )
         if token_resp.status_code != 200:
-            self.logger.warning(f"❌ Token не отримано для {cfg.name}")
+            self.logger.warning(f"❌ Token not received for {cfg.name}")
             return
 
         vcloud_token = token_resp.headers.get("x-vmware-vcloud-access-token")
         if not vcloud_token:
-            self.logger.warning(f"❌ Порожній token у відповіді від {cfg.name}")
+            self.logger.warning(f"❌ Empty token in response from {cfg.name}")
             return
 
-        self.logger.info(f"✅ Отримано токен для {cfg.name}")
+        self.logger.info(f"✅ Token received for {cfg.name}")
 
-        # --- Отримуємо всі сторінки з ВМ
+        # --- Get all pages from ВМ
         all_vms = []
         page, page_size = 1, 128
 
@@ -111,14 +111,14 @@ class CloudSyncJob(JobRunner):
                 break
 
             all_vms.extend(records)
-            self.logger.info(f"📄 Page {page}: {len(records)} ВМ")
+            self.logger.info(f"📄 Page {page}: {len(records)} VM")
 
             if len(records) < page_size:
                 break
             page += 1
             time.sleep(0.3)
 
-        self.logger.info(f"📦 Отримано всього {len(all_vms)} ВМ")
+        self.logger.info(f"📦 Отримано всього {len(all_vms)} VM")
 
         for vm in all_vms:
             try:
@@ -142,11 +142,11 @@ class CloudSyncJob(JobRunner):
             disk = vm.get("totalStorageAllocatedMb", 0)
 
             if vm.get("isVAppTemplate") and not cfg.sync_templates:
-                self.logger.info(f"⏭ Пропущено шаблон {name}")
+                self.logger.info(f"⏭ Skipped template {name}")
                 return
 
             if status == "POWERED_OFF" and not cfg.sync_poweroff:
-                self.logger.info(f"⏭ Пропущено вимкнену VM {name}")
+                self.logger.info(f"⏭ Skipped offline VM {name}")
                 return
 
             # --- Деталі ВМ
@@ -260,7 +260,7 @@ class CloudSyncJob(JobRunner):
                     else:
                         self.logger.debug(f"✅ MAC {mac} вже актуальна для {name}")
                 else:
-                    self.logger.debug(f"ℹ️ MAC відсутній для {name}")
+                    self.logger.debug(f"ℹ️ MAC missing for {name}")
 
 
                 vlan = None
@@ -278,7 +278,7 @@ class CloudSyncJob(JobRunner):
                             defaults={"name": net_name, **vlan_defaults},
                         )
                     except Exception as vlan_err:
-                        self.logger.warning(f"⚠️ Пропущено VLAN {net_name}: {vlan_err}")
+                        self.logger.warning(f"⚠️ Skipped VLAN {net_name}: {vlan_err}")
 
                 for addr in [ip_addr, ext_ip]:
                     if not addr:
@@ -301,7 +301,7 @@ class CloudSyncJob(JobRunner):
                             vm_obj.save()
                         self.logger.info(f"🌐 IP {addr} → {name}")
                     except Exception as ip_err:
-                        self.logger.warning(f"⚠️ Пропущено IP {addr}: {ip_err}")
+                        self.logger.warning(f"⚠️ Skipped IP {addr}: {ip_err}")
                         continue
 
         except Exception as e:
@@ -309,7 +309,7 @@ class CloudSyncJob(JobRunner):
 
 
 # ==============================================================
-# 🕓 Scheduler — автозапуск CloudSyncJob з урахуванням sync_interval_minutes
+# 🕓 Scheduler — autorun CloudSyncJob with sync_interval_minutes
 # ==============================================================
 @system_job(interval=JobIntervalChoices.INTERVAL_HOURLY)
 class CloudSyncScheduler(JobRunner):
@@ -327,13 +327,13 @@ class CloudSyncScheduler(JobRunner):
             self.logger.info("⏳ Немає конфігів для синку на цей момент.")
             return
 
-        self.logger.info(f"🕓 Знайдено {due_configs.count()} конфігів для запуску.")
+        self.logger.info(f"🕓 Find {due_configs.count()} configs for run.")
         for cfg in due_configs:
             try:
                 CloudSyncJob.enqueue(config_id=cfg.id)
                 interval = cfg.sync_interval_minutes or 60
                 cfg.next_sync = now + timedelta(minutes=interval)
                 cfg.save(update_fields=["next_sync"])
-                self.logger.info(f"✅ Запущено синк: {cfg.name} (next={cfg.next_sync})")
+                self.logger.info(f"✅ Run sync: {cfg.name} (next={cfg.next_sync})")
             except Exception as e:
                 self.logger.error(f"⚠️ Не вдалося поставити '{cfg.name}' у чергу: {e}")
